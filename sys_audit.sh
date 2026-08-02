@@ -21,6 +21,7 @@ ENV_FILE=".env"
 
 if [[ -f "$ENV_FILE" ]]; then
 	set -o allexport
+	# shellcheck source=/dev/null
 	source "$ENV_FILE"
 	set +o allexport
 else
@@ -48,6 +49,12 @@ log() {
 disk_usage() {
 	local usage
 	usage=$(df -h / | awk 'NR==2 {gsub("%",""); print $5}')
+
+	if [[ ! "$usage" =~ ^[0-9]+$ ]]; then
+		log "ERROR" "Failed to parse disk usage. Got non-numeric value: '$usage'"
+		exit 1
+	fi
+
 	if [[ "$usage" -ge 80 ]]; then
 		log "WARN" "Disk usage is high: ${usage}%"
 	else
@@ -57,7 +64,12 @@ disk_usage() {
 
 memory_usage() {
 	local used total percent
-	read used total <<< $(free -m | awk '/^Mem:/ {print $3, $2}')
+	read -r used total <<< "$(free -m | awk '/^Mem:/ {print $3, $2}')"
+
+	if [[ ! "$used" =~ ^[0-9]+$ ]] || [[ ! "$total" =~ ^[0-9]+$ ]] || [[ "$total" -eq 0 ]]; then
+		log "ERROR" "Failed to parse memory usage output (used='$used', total='$total')"
+		exit 1
+	fi
 	percent=$(( used * 100 / total ))
 
 	if [[ "$percent" -ge 80 ]]; then
