@@ -79,6 +79,40 @@ memory_usage() {
 	fi
 }
 
+cpu_load() {
+	local cores
+	cores=$(nproc)
+	local threshold
+	threshold=$(echo "$cores * 0.8" | bc -l)
+	local load
+	load=$(awk '{print $1}' /proc/loadavg 2>/dev/null)
+
+	if [[ ! "$load" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
+		log "ERROR" "Failed to parse CPU load. Got non-numeric value: '$load'"
+		exit 1
+	fi
+
+	if (( $(echo "$load > $threshold" | bc -l) )); then
+		log "WARN" "CPU load is high: $load"
+	else
+		log "INFO" "CPU load is OK: $load"
+	fi
+}
+
+network_check() {
+	if ! command -v ping &> /dev/null; then
+		log "WARN" "ping command not found, skipping network check"
+		return
+	fi
+
+	local target="8.8.8.8"
+	if ping -c 1 -W 2 "$target" &> /dev/null; then
+		log "INFO" "Network check successful: Able to reach $target"
+	else
+		log "WARN" "Network check failed: Unable to reach $target"
+	fi
+	
+}
 active_users() {
 	local users
 	local count=0
@@ -100,6 +134,8 @@ active_users() {
 CHECK_DISK=false
 CHECK_MEMORY=false
 CHECK_USERS=false
+CHECK_CPU=false
+CHECK_NETWORK=false
 
 
 
@@ -110,6 +146,8 @@ usage() {
 	echo "  --disk   Check disk usage"
 	echo "  --memory Check memory usage"
 	echo "  --users  Show active users"
+	echo "  --cpu    Check CPU load"
+	echo "  --network Check network connectivity"
 	echo "  --all    Run all checks"
 	echo "  --help   Show this help message"
 }
@@ -131,10 +169,18 @@ for arg in "$@"; do
 		--users)
 			CHECK_USERS=true
 			;;
+		--cpu)
+			CHECK_CPU=true
+			;;
+		--network)
+			CHECK_NETWORK=true
+			;;
 		--all)
 			CHECK_DISK=true
 			CHECK_MEMORY=true
 			CHECK_USERS=true
+			CHECK_CPU=true
+			CHECK_NETWORK=true
 			;;
 		--help)
 			usage
@@ -160,6 +206,14 @@ fi
 
 if $CHECK_USERS; then
 	active_users
+fi
+
+if $CHECK_CPU; then
+	cpu_load
+fi
+
+if $CHECK_NETWORK; then
+	network_check
 fi
 
 log "INFO" "System audit script finished" 

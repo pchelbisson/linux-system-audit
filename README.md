@@ -7,12 +7,14 @@ Tested on **Ubuntu 20.04**.
 
 ---
 
-## 📌 What this project does
+## What this project does
 
 The script performs a lightweight system audit and outputs structured information about:
 
 * Disk usage
 * Memory usage
+* CPU loads
+* network (ping 8.8.8.8)
 * Active users
 
 This is **not a monitoring system**.
@@ -25,9 +27,9 @@ It is a controlled audit script designed to be:
 
 ---
 
-## ⚙️ Features
+## Features
 
-* Command-line arguments (`--disk`, `--memory`, `--users`, `--all`)
+* Command-line arguments (`--disk`, `--memory`, `--cpu`, `--network`, `--users`, `--all`)
 * Modular Bash functions
 * Argument validation
 * Conditional execution of checks
@@ -38,19 +40,19 @@ It is a controlled audit script designed to be:
 
 ---
 
-## 🧱 Project structure
+## Project structure
 
 ```
 linux-system-audit/
 ├── sys_audit.sh
 ├── README.md
-├── .env
+├── .env.example
 └── logs/
 ```
 
 ---
 
-## 🚀 Usage
+## Usage
 
 Make the script executable:
 
@@ -64,6 +66,8 @@ Run specific checks:
 ./sys_audit.sh --disk
 ./sys_audit.sh --memory
 ./sys_audit.sh --users
+./sys_audit.sh --cpu
+./sys_audit.sh --network
 ```
 
 Run all checks:
@@ -80,7 +84,7 @@ Show help:
 
 ---
 
-## 📂 Logging
+## Logging
 
 The script writes logs to a file inside the `logs/` directory.
 
@@ -100,7 +104,7 @@ Log file example content:
 
 ---
 
-## 🧠 Why this project
+## Why this project
 
 This project was built to practice:
 
@@ -112,7 +116,7 @@ This project was built to practice:
 
 ---
 
-## 📎 Notes
+## Notes
 
 * Designed for Linux systems
 * Not intended for production monitoring
@@ -120,6 +124,18 @@ This project was built to practice:
 
 ---
 
-## 👤 Author
+## Design Decisions
+
+### Why specifically `/proc`, and not `uptime` in CPU check?
+* Speed ​​and Performance (No Fork Processes)
+* Parsing simplicity (Reliability)
+
+### Why 8.8.8.8 instead of a domain name?
+* Isolating the problem (Testing the "bare" network)
+* Extreme availability (Anycast)
+
+---
+
+## Author
 
 Built as a personal DevOps learning project.
