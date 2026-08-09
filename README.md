@@ -136,6 +136,12 @@ This project was built to practice:
 * Isolating the problem (Testing the "bare" network)
 * Extreme availability (Anycast)
 
+### Custom Log Rotation vs. `logrotate`
+Instead of relying on the system-standard `logrotate` utility, a built-in bash-based rotation mechanism was implemented for the following reasons:
+* Zero External Dependencies
+* Non-Root Execution
+* Environment Portability
+
 ---
 
 ## Author

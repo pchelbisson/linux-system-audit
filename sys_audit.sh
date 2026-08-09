@@ -10,6 +10,19 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
+log() {
+	local level="$1"
+	local message="$2"
+	
+	if [[ -n "${LOG_PATH:-}" ]]; then
+		echo "[$(date '+%Y-%m-%d %H:%M:%S')] [$level] $message" >> "$LOG_PATH"
+	fi
+	
+	if [[ "${VERBOSE:-false}" == "true" ]]; then
+		echo "[$level] $message"
+	fi
+}
+
 cleanup() {
 	log "INFO" "Script interrupted. Cleaning up and exiting."
 	exit 0
@@ -31,20 +44,47 @@ fi
 LOG_DIR="${LOG_DIR:-./logs}"
 LOG_FILE="${LOG_FILE:-sys_audit.log}"
 VERBOSE="${VERBOSE:-false}"
+MAX_SIZE_MB=1
+MAX_AGE_DAYS=5
 
 mkdir -p "$LOG_DIR"
 LOG_PATH="$LOG_DIR/$LOG_FILE"
 
-log() {
-	local level="$1"
-	local message="$2"
-	
-	echo "[$(date '+%Y-%m-%d %H:%M:%S')] [$level] $message" >> "$LOG_PATH"
-	
-	if [[ "$VERBOSE" == "true" ]]; then
-		echo "[$level] $message"
-	fi
-}
+if [[ -f "$LOG_PATH" ]]; then
+	MAX_SIZE_BYTES=$((MAX_SIZE_MB * 1024 * 1024))
+    FILE_SIZE=$(stat -c%s "$LOG_PATH" 2>/dev/null || stat -f%z "$LOG_PATH")
+
+	MAX_AGE_SECONDS=$((MAX_AGE_DAYS * 24 * 60 * 60))
+    CURRENT_TIME=$(date +%s)
+
+	FILE_MTIME=$(stat -c%Y "$LOG_PATH" 2>/dev/null || stat -f%m "$LOG_PATH")
+    FILE_AGE=$((CURRENT_TIME - FILE_MTIME))
+
+	NEED_ROTATION=false
+
+	if [ "$FILE_SIZE" -gt "$MAX_SIZE_BYTES" ]; then
+        log "INFO" "The log has exceeded the size of ${MAX_SIZE_MB} MB. Rotation is required."
+        NEED_ROTATION=true
+    elif [ "$FILE_AGE" -gt "$MAX_AGE_SECONDS" ]; then
+        log "INFO" "The log is older than ${MAX_AGE_DAYS} days. Rotation is required."
+        NEED_ROTATION=true
+    fi
+
+	if [ "$NEED_ROTATION" = true ]; then
+        TIMESTAMP=$(date +%s)
+        NEW_LOG_NAME="${LOG_PATH}.${TIMESTAMP}"
+        
+        mv "$LOG_PATH" "$NEW_LOG_NAME"
+        
+        touch "$LOG_PATH"
+        log "INFO" "Rotation successfully completed. Old file: $NEW_LOG_NAME"
+    else
+        log "INFO" "The log is in order, rotation is not required."
+    fi
+else
+	touch "$LOG_PATH"
+fi
+
 
 disk_usage() {
 	local usage
