@@ -1,3 +1,5 @@
+[![Lint Shell Scripts](https://github.com/pchelbisson/linux-system-audit/actions/workflows/shellcheck.yml/badge.svg)](https://github.com/pchelbisson/linux-system-audit/actions/workflows/shellcheck.yml)
+
 # Linux System Audit Script
 
 A small but practical Bash-based tool for auditing basic Linux system state.
